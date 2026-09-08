@@ -1,0 +1,106 @@
+import logging
+from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import Path
+from datetime import datetime
+import re
+
+@dataclass(frozen=True)
+class Scan:
+    substrate_id: str
+    pixel_num: int
+    pce: float
+    ff: float
+    voc: float
+    jsc: float
+    pm: float
+    source_file: Path
+    timestamp: datetime
+    direction: str
+    illumination: str
+
+logger = logging.getLogger(__name__)
+
+class Illumination(StrEnum):
+    LIGHT = "Light"
+    DARK = "Dark"
+
+class WrongFileName(Exception):
+    pass
+
+
+def parse_file_name(file_path: Path):
+    str_path = file_path.name.split("_")
+    pattern = re.compile(r"([a-z]\d+)p(\d+)")
+    full_id_list = []
+    illumination = None
+    for token in str_path:
+        full_id = pattern.fullmatch(token)
+        if full_id:
+            full_id_list.append(full_id)
+        if token in Illumination:
+            illumination = token
+
+    if len(full_id_list) == 1 and illumination:
+        substrate_id = full_id_list[0].group(1)
+        pixel_num = full_id_list[0].group(2)
+        pixel_num = int(pixel_num)
+    else:
+        raise WrongFileName(f"Wrong name of the file: {file_path}")
+    return substrate_id, pixel_num, illumination
+
+def parse(file_path: Path, file_encoding="cp1251") -> list[Scan]:
+    scans = []
+    substrate_id, pixel_num, illumination = parse_file_name(file_path)
+    with open(file_path, "r", encoding=file_encoding) as f:
+        line_num = 0
+
+        while True:
+            line = f.readline()
+            line_num += 1
+            if not line:
+                break
+            if not line.startswith("#Uoc (V)"):
+                continue
+            try:
+                raw_data = f.readline()
+                line_num += 1
+
+                splited_data = raw_data.strip().split("\t")
+                logger.debug(splited_data)
+                voc = float(splited_data[0].lstrip("#"))
+                jsc = float(splited_data[1])
+                ff = float(splited_data[2])
+                pce = float(splited_data[3])
+                pm = float(splited_data[4])
+
+                time_data = f.readline().strip().split("\t")
+                line_num += 1
+
+                datetime_str = time_data[1] + " " + time_data[2]
+                direction = time_data[0].lstrip("#")
+                date = datetime.strptime(datetime_str, "%d.%m.%Y %H:%M:%S")
+                logger.debug(date)
+
+                scan = Scan(voc=voc,
+                            jsc=jsc,
+                            ff=ff,
+                            pce=pce,
+                            pm=pm,
+                            substrate_id=substrate_id,
+                            pixel_num=pixel_num,
+                            source_file=file_path,
+                            timestamp=date,
+                            direction=direction,
+                            illumination=illumination)
+                scans.append(scan)
+            except (ValueError, IndexError) as e:
+                logger.warning("Corrupted scan in %s: %s in line %d", file_path, e, line_num)
+
+
+    logger.info("Получено измерений: %d, из файла %s",len(scans), file_path)
+
+    return scans
+
+
+parse(Path(r"C:\Users\User\Documents\03.09.2026\20260903_Witnesses_Alena_Light_c10p1_Kirill_P.txt"))
