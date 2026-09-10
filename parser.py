@@ -49,10 +49,27 @@ def parse_file_name(file_path: Path):
         raise WrongFileName(f"Wrong name of the file: {file_path}")
     return substrate_id, pixel_num, illumination
 
+
+def get_data(data_line: str, sup_line: str):
+    time_data = sup_line.split("\t")
+    splited_data = data_line.strip().split("\t")
+    logger.debug(splited_data)
+    voc = float(splited_data[0].lstrip("#"))
+    jsc = float(splited_data[1])
+    ff = float(splited_data[2])
+    pce = float(splited_data[3])
+    pm = float(splited_data[4])
+    datetime_str = time_data[1] + " " + time_data[2]
+    direction = time_data[0].lstrip("#")
+    date = datetime.strptime(datetime_str, "%d.%m.%Y %H:%M:%S")
+    logger.debug(date)
+    return voc, jsc, ff, pce, pm, date, direction
+
+
 def parse(file_path: Path, file_encoding="cp1251") -> list[Scan]:
     scans = []
     substrate_id, pixel_num, illumination = parse_file_name(file_path)
-    with open(file_path, "r", encoding=file_encoding) as f:
+    with (open(file_path, "r", encoding=file_encoding) as f):
         line_num = 0
 
         while True:
@@ -64,23 +81,9 @@ def parse(file_path: Path, file_encoding="cp1251") -> list[Scan]:
                 continue
             try:
                 raw_data = f.readline()
-                line_num += 1
-
-                splited_data = raw_data.strip().split("\t")
-                logger.debug(splited_data)
-                voc = float(splited_data[0].lstrip("#"))
-                jsc = float(splited_data[1])
-                ff = float(splited_data[2])
-                pce = float(splited_data[3])
-                pm = float(splited_data[4])
-
-                time_data = f.readline().strip().split("\t")
-                line_num += 1
-
-                datetime_str = time_data[1] + " " + time_data[2]
-                direction = time_data[0].lstrip("#")
-                date = datetime.strptime(datetime_str, "%d.%m.%Y %H:%M:%S")
-                logger.debug(date)
+                sup_data = f.readline().strip()
+                line_num += 2
+                voc, jsc, ff, pce, pm, date, direction = get_data(raw_data, sup_data)
 
                 scan = Scan(voc=voc,
                             jsc=jsc,
