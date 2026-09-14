@@ -28,6 +28,11 @@ class Illumination(StrEnum):
 class WrongFileName(Exception):
     pass
 
+class BrokenFolder(Exception):
+    pass
+
+class MissingFiles(Exception):
+    pass
 
 def parse_file_name(file_path: Path):
     str_path = file_path.name.split("_")
@@ -99,11 +104,27 @@ def parse(file_path: Path, file_encoding="cp1251") -> list[Scan]:
                 scans.append(scan)
             except (ValueError, IndexError) as e:
                 logger.warning("Corrupted scan in %s: %s in line %d", file_path, e, line_num)
-
-
+                
     logger.info("Получено измерений: %d, из файла %s",len(scans), file_path)
 
     return scans
 
 
-parse(Path(r"C:\Users\User\Documents\03.09.2026\20260903_Witnesses_Alena_Light_c10p1_Kirill_P.txt"))
+def parse_dir(dir_path: Path) -> list[Scan]:
+    scan_list = []
+    error_list = []
+    for file_path in sorted(dir_path.glob("*.txt")):
+        try:
+            scan_list.extend(parse(file_path))
+        except WrongFileName as e:
+            logger.warning("Wrong file name: %s", e)
+            error_list.append(e)
+    if error_list:
+        raise BrokenFolder(f"Something got wrong with the files or directory: {error_list}")
+    if not scan_list:
+        raise MissingFiles("Could not find any suitable file. Check your folder path")
+    return scan_list
+
+
+
+parse_dir(Path(r"F:\python\box_chart_maker\JV"))
