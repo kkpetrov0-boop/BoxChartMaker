@@ -1,0 +1,6 @@
+configs:
+  Control: [c2, c3]
+  Config A: [c5, c6, c7]
+  Config B: [c10, c11]
+  Config C: [c12, c14]
+  Config D: [c15, c16]

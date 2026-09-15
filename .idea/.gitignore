@@ -3,7 +3,14 @@
 /workspace.xml
 /*.xml
 /*.iml
-/.venv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
 # Editor-based HTTP Client requests
 /httpRequests/
 

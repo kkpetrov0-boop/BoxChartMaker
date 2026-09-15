@@ -127,4 +127,3 @@ def parse_dir(dir_path: Path) -> list[Scan]:
 
 
 
-parse_dir(Path(r"F:\python\box_chart_maker\JV"))

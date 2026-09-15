@@ -1,4 +1,4 @@
-from jv_parser import Illumination, Scan
+from box_chart_maker.jv_parser import Illumination, Scan
 from collections import defaultdict
 import logging
 import yaml

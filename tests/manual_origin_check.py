@@ -1,7 +1,8 @@
 from datetime import datetime
+
 from pathlib import Path
-from jv_parser import Scan
-from box_chart_builder import build_box_chart, build_datatable
+from box_chart_maker.jv_parser import Scan
+from box_chart_maker.box_chart_builder import build_box_chart, build_datatable
 
 def _s(sub, px, pce, ff, voc, jsc, ts):
     return Scan(
@@ -26,4 +27,4 @@ DEMO = {
     ],
 }
 
-book = build_datatable(DEMO)
+#book = build_datatable(DEMO, Path(r"F:\python\box_chart_maker\BoxChartMaker"))

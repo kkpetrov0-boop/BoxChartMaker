@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "box-chart-maker"
+version = "0.1.0"
+description = "Builds box charts from J-V measurement files in OriginPro"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=3.0.5",
+    "PyYAML>=6.0.3",
+    "originpro>=1.1.15",
+]
+readme = "README.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/box_chart_maker"]
+
+[project.scripts]
+box-chart-maker = "box_chart_maker.cli_parser:main"
+
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0"
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".",
+]
+addopts = "--cov=src --cov-report=term-missing"
+
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+    "*_test.py",
+    "*/test_*.py",
+]
