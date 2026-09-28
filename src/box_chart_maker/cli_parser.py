@@ -6,7 +6,7 @@ from box_chart_maker.agregator import GroupingError, choose_best, group_config, 
 from box_chart_maker.box_chart_builder import build_datatable, build_graphs
 from box_chart_maker.box_chart_builder import PARAMS
 from box_chart_maker.jv_parser import BrokenFolder, MissingFiles, WrongFileName, parse_dir
-from box_chart_maker.config import read_config, get_pattern, get_limits, ConfigError
+from box_chart_maker.config import read_config, get_pattern, ConfigError
 
 logger = logging.getLogger()
 
