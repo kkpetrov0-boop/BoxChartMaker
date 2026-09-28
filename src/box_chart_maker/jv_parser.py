@@ -19,6 +19,12 @@ class Scan:
     direction: str
     illumination: str
 
+    @property
+    def label(self) -> str:
+        if self.pixel_num == 0:
+            return self.substrate_id
+        return f"{self.substrate_id}p{self.pixel_num}"
+
 logger = logging.getLogger(__name__)
 
 class Illumination(StrEnum):
@@ -34,9 +40,9 @@ class BrokenFolder(Exception):
 class MissingFiles(Exception):
     pass
 
-def parse_file_name(file_path: Path):
+def parse_file_name(file_path: Path, name_pattern: str):
     str_path = file_path.name.split("_")
-    pattern = re.compile(r"([a-z]\d+)p(\d+)")
+    pattern = re.compile(name_pattern)
     full_id_list = []
     illumination = None
     for token in str_path:
@@ -47,9 +53,13 @@ def parse_file_name(file_path: Path):
             illumination = token
 
     if len(full_id_list) == 1 and illumination:
-        substrate_id = full_id_list[0].group(1)
-        pixel_num = full_id_list[0].group(2)
-        pixel_num = int(pixel_num)
+        substr_info = full_id_list[0].groupdict()
+        substrate_id = substr_info["substrate"]
+        pixel_num = substr_info.get("pixel")
+        if pixel_num is None:
+            pixel_num = 0
+        else:
+            pixel_num = int(pixel_num)
     else:
         raise WrongFileName(f"Wrong name of the file: {file_path}")
     return substrate_id, pixel_num, illumination
@@ -71,9 +81,9 @@ def get_data(data_line: str, sup_line: str):
     return voc, jsc, ff, pce, pm, date, direction
 
 
-def parse(file_path: Path, file_encoding="cp1251") -> list[Scan]:
+def parse(file_path: Path, name_pattern: str, file_encoding="cp1251") -> list[Scan]:
     scans = []
-    substrate_id, pixel_num, illumination = parse_file_name(file_path)
+    substrate_id, pixel_num, illumination = parse_file_name(file_path, name_pattern)
     with (open(file_path, "r", encoding=file_encoding) as f):
         line_num = 0
 
@@ -110,12 +120,12 @@ def parse(file_path: Path, file_encoding="cp1251") -> list[Scan]:
     return scans
 
 
-def parse_dir(dir_path: Path) -> list[Scan]:
+def parse_dir(dir_path: Path, name_pattern: str) -> list[Scan]:
     scan_list = []
     error_list = []
     for file_path in sorted(dir_path.glob("*.txt")):
         try:
-            scan_list.extend(parse(file_path))
+            scan_list.extend(parse(file_path, name_pattern))
         except WrongFileName as e:
             logger.warning("Wrong file name: %s", e)
             error_list.append(e)

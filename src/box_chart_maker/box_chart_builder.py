@@ -18,6 +18,7 @@ def origin_shutdown_exception_hook(exctype, value, traceback):
 if op and op.oext:
     sys.excepthook = origin_shutdown_exception_hook
 
+
 def build_datatable(scans_dict: dict[str, list[Scan]]) -> op.worksheet.WBook:
     if op.oext:
         op.set_show(True)
@@ -28,7 +29,7 @@ def build_datatable(scans_dict: dict[str, list[Scan]]) -> op.worksheet.WBook:
         wks = book.add_sheet(lname)
         for i, (config_name, scans) in enumerate(scans_dict.items()):
             wks.from_list(i*2, [sign * getattr(scan, field) for scan in scans], lname=lname, units=unit, comments=config_name,axis="Y")
-            wks.from_list(i*2+1, [scan.substrate_id + "p" + str(scan.pixel_num) for scan in scans], axis="L")
+            wks.from_list(i * 2 + 1, [scan.label for scan in scans], axis="L")
 
     wks = book[0]
     wks.name = "Data"

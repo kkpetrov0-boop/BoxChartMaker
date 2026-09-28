@@ -1,5 +1,6 @@
+from box_chart_maker.config import PARAMS
 from box_chart_maker.jv_parser import Illumination, Scan
-from collections import defaultdict
+from collections import defaultdict, Counter
 import logging
 import yaml
 from pathlib import Path
@@ -8,6 +9,30 @@ logger = logging.getLogger(__name__)
 
 class GroupingError(Exception):
     pass
+
+
+def delete_invalid_scans(scans: list[Scan], limits: dict) -> list[Scan]:
+    bad_scans = Counter()
+    clear_scans = []
+    for scan in scans:
+        for field, (lname, unit, sign) in PARAMS.items():
+            value = sign * getattr(scan, field)
+
+            if limits.get(field) is None:
+                continue
+
+            min_value = limits[field].get("min", float("-inf"))
+            max_value = limits[field].get("max", float("inf"))
+
+            if not (min_value < value < max_value):
+                logger.debug("Removed invalid on %s: %s= %.2f", scan.label,field,value)
+                bad_scans[field] += 1
+                break
+        else:
+            clear_scans.append(scan)
+    logger.info(f"Removed %d invalid scans. %s", bad_scans.total(), dict(bad_scans))
+    return clear_scans
+
 
 def choose_best(scans: list[Scan], param: str="pce") -> dict[tuple[str, int], Scan]:
     scans_dict = defaultdict(list)
@@ -26,14 +51,12 @@ def choose_best(scans: list[Scan], param: str="pce") -> dict[tuple[str, int], Sc
     return final_dict
 
 
-def group_config(yaml_path:Path, scans: dict) -> dict[str]:
+def group_config(config: dict, scans: dict) -> dict[str]:
     error_list = []
-    with open(yaml_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
     reverse_dict = {}
     result_set = set()
 
-    for config_name, substrates in config["configs"].items():
+    for config_name, substrates in config.items():
         for substrate_name in substrates:
             if substrate_name in reverse_dict:
                 error_list.append(f"One substrate '{substrate_name}' in two or more configs {config_name}, {reverse_dict[substrate_name]}")
@@ -43,7 +66,7 @@ def group_config(yaml_path:Path, scans: dict) -> dict[str]:
     yaml_set = set(reverse_dict)
 
     scan_dict = {}
-    for config_name in config["configs"]:
+    for config_name in config:
         scan_dict[config_name] = []
 
     for scan in scans.values():
@@ -58,7 +81,7 @@ def group_config(yaml_path:Path, scans: dict) -> dict[str]:
     if missing:
         logger.warning("Could not find some substrates: %s", ", ".join(sorted(missing)))
 
-    for config_name in config["configs"]:
+    for config_name in config:
         if not scan_dict[config_name]:
             error_list.append(f"Could not find any result for this config {config_name}")
 
