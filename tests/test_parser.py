@@ -1,3 +1,4 @@
+from box_chart_maker.config import NAME_TYPES
 from box_chart_maker.jv_parser import get_data, parse_file_name, WrongFileName, parse
 import pytest
 from pathlib import Path
@@ -26,12 +27,13 @@ def test_bad_data(bad_line,exception):
     with pytest.raises(exception):
         get_data(bad_line, sup_line)
 
-@pytest.mark.parametrize("file_path,expected_id,expected_num,expected_illum",[
-    (Path("20260903_Witnesses_Alena_Light_c10p1_Kirill_P.txt"), "c10", 1, "Light"),
-    (Path("20260903_Witnesses_Alena_Light_c10p12_Kirill_P.txt"), "c10", 12, "Light"),
+@pytest.mark.parametrize("file_path,expected_id,expected_num,expected_illum,name_pattern",[
+    (Path("20260903_Witnesses_Alena_Light_c10p1_Kirill_P.txt"), "c10", 1, "Light", NAME_TYPES["small"]),
+    (Path("20260903_Witnesses_Alena_Light_c10p12_Kirill_P.txt"), "c10", 12, "Light", NAME_TYPES["small"]),
+    (Path("20260122_SnO2_172_Light_260815 1_Alena.txt"), "260815 1", 0, "Light", NAME_TYPES["module"]),
 ])
-def test_parse_file_name(file_path,expected_id,expected_num,expected_illum):
-    substrate_id, pixel_num, illumination = parse_file_name(file_path)
+def test_parse_file_name(file_path,expected_id,expected_num,expected_illum,name_pattern):
+    substrate_id, pixel_num, illumination = parse_file_name(file_path, name_pattern)
     assert substrate_id == expected_id
     assert pixel_num == expected_num
     assert illumination == expected_illum
@@ -39,11 +41,12 @@ def test_parse_file_name(file_path,expected_id,expected_num,expected_illum):
 @pytest.mark.parametrize("file_path",[
     Path("20260903_Witnesses_Alena_Light_c10p1_b12p3_Kirill_P.txt"),
     Path("20260903_Witnesses_Alena_Light_p12_Kirill_P.txt"),
-    Path("20260903_Witnesses_Alena_c10p12_Kirill_P.txt")
+    Path("20260903_Witnesses_Alena_c10p12_Kirill_P.txt"),
+    Path("20260122_SnO2_172_Light_260815 1_Alena.txt")
 ])
 def test_bad_parse_file_name(file_path):
     with pytest.raises(WrongFileName):
-        parse_file_name(file_path)
+        parse_file_name(file_path, NAME_TYPES["small"])
 
 
 FILE_DATA = """
@@ -67,7 +70,7 @@ FILE_DATA = """
 def test_parse(tmp_path, caplog):
     file_path = tmp_path / "20260122_SnO2_172_Light_c2p2_Alena.txt"
     file_path.write_text(FILE_DATA, encoding="cp1251")
-    scans = parse(file_path)
+    scans = parse(file_path, NAME_TYPES["small"])
     assert len(scans) == 2
     assert math.isclose(scans[0].voc, 0.008138441)
     assert math.isclose(scans[1].voc, 0.008113147)

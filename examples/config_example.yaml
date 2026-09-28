@@ -4,3 +4,17 @@ configs:
   Config B: [c10, c11]
   Config C: [c12, c14]
   Config D: [c15, c16]
+name_type: small # available: small, module
+limits:
+  ff:
+    min: 40.0
+    max: 100.0
+  pce:
+    min: 10.0
+    max: 30.0
+  voc:
+    min: 0.8
+    max: 1.4
+  jsc:
+    min: 15.0
+    max: 25.0

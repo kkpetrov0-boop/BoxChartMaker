@@ -2,11 +2,11 @@ import argparse
 from pathlib import Path
 import logging
 import sys
-from box_chart_maker.agregator import GroupingError, choose_best, group_config
+from box_chart_maker.agregator import GroupingError, choose_best, group_config, delete_invalid_scans
 from box_chart_maker.box_chart_builder import build_datatable, build_graphs
 from box_chart_maker.box_chart_builder import PARAMS
 from box_chart_maker.jv_parser import BrokenFolder, MissingFiles, WrongFileName, parse_dir
-
+from box_chart_maker.config import read_config, get_pattern, get_limits, ConfigError
 
 logger = logging.getLogger()
 
@@ -37,10 +37,13 @@ def main():
     args = parse_cmd()
     log_setup(args.verbose)
     try:
-        scan_list = parse_dir(args.data_dir)
-        final_dict = choose_best(scan_list, args.param)
-        scan_dict = group_config(args.yaml, final_dict)
-    except (GroupingError, BrokenFolder, MissingFiles) as e:
+        config = read_config(args.yaml)
+        name_pattern = get_pattern(config)
+        scan_list = parse_dir(args.data_dir, name_pattern)
+        valid_scan_list = delete_invalid_scans(scan_list, config["limits"])
+        final_dict = choose_best(valid_scan_list, args.param)
+        scan_dict = group_config(config["configs"], final_dict)
+    except (GroupingError, BrokenFolder, MissingFiles, ConfigError) as e:
         logger.error("%s", e)
         sys.exit(1)
     args.out_dir.mkdir(parents=True, exist_ok=True)
